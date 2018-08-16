@@ -1,18 +1,16 @@
-#brief: график радиусов ориентированной кривизный по времени [1/R(t)] по указанному сезону
+#brief: график радиусов ориентированной кривизный по времени [1/R(t)]
 #       для использования менять SRC_FOLDER
 #usage: python3 circle_fit_season.py
 #authors: pichugin
 import os
 import sys
-import yaml
-import pathlib
 import numpy as np
-import gzip
+from lib.modules import (
+    yamls_dir, ungzip,
+    choose_sense_and_shots,
+    vector_sum, mercator
+    )
 import matplotlib.pyplot as plt
-try:
-    from yaml import CLoader as Loader
-except ImportError:
-    from yaml import Loader
 
 iSeason = 51
 serial  = 'skl'
@@ -76,81 +74,9 @@ def smart_window_stack(a, b):
             continue
     return start_p, end_p, good_hords
 
-#чтение gzip.yml
-def ungzip(yaml_in_directory):
-    ungzipped = None
-    try:
-        ungzipped = gzip.open(yaml_in_directory, 'rt')
-        ungzipped.readline()
-        ungzipped = ungzipped.read()
-        ungzipped = ungzipped.replace(':', ': ')
-    except OSError:
-        print("Error in {}".format(yaml_in_directory))
-        raise
-    yml = yaml.load(ungzipped, Loader=Loader)
-    return yml
 
-def choose_sense_and_shots(txt, season_name, preferred_sense=None):
-    if preferred_sense != None:
-        shots = [shot for shot in txt['shots'] if preferred_sense in shot]
-        return (preferred_sense, shots)
-
-    ## HARDCODE ALARM
-    sense1_senses = ['akn', 'akt', 'ppg', 'eur', 'clf', 'izl']
-    sense1_flag = False
-    priority_senses = ['emlid', 'emlidBack', 'sense1', 'sense2']
-    for s1s in sense1_senses:
-        if season_name[:3] == s1s:
-            sense1_flag = True
-
-    if sense1_flag:
-        sense = 'sense1'
-        shots = [shot for shot in txt['shots'] if sense in shot]
-    else:
-        for ps in priority_senses:
-            sense = ps
-            try:
-                shots = [shot for shot in txt['shots'] if sense in shot]
-            except TypeError:
-                raise TypeError("File doesn't have any shots")
-            if len(shots) != 0:
-                break
-
-    return (sense, shots)
-
-#считывание ямлов в директории
-def yamls_dir(src_folder):
-    if not pathlib.Path(src_folder).exists():
-        raise FileNotFoundError('You need to specify existing path')
-    yamls_in_directory = []
-    for file in os.listdir(src_folder):
-        file = os.path.join(src_folder, file)
-        if os.path.isfile(file) and file[-7:] == '.yml.gz':
-            yamls_in_directory.append(file)
-    return yamls_in_directory
-
-def mercator(lat, lon, lat0, lon0):
-    R_equator = 6378137.000
-    scale = np.cos(np.pi*lat0/180)
-    R = R_equator * 1 * (0.99832407 + 0.00167644 * np.cos(2 * (np.pi*lat/180)) - 0.00000352*np.cos(4 * (np.pi*lat/180)))
-    x = scale * R * lon*np.pi/180
-    y = scale * R * np.log(np.tan(np.pi/4.0 + lat * (np.pi/180.0)/2.0))
-    x0 = scale * R * lon0*np.pi/180
-    y0 = scale * R * np.log(np.tan(np.pi/4.0 + lat0 * (np.pi/180.0)/2.0))
-    x = x - x0
-    y = y - y0
-    pos = x
-    pos = np.array([pos, y])
-    return pos
-
-def vector_sum(a, b):
-    a = fabs(a)
-    b = fabs(b)
-    c = sqrt((a**2)+(b**2))
-    return c
-
-#GO
 season_title = "{0:s}.{1:03d}".format(serial, iSeason)
+print(season_title)
 yamls_in_directory = yamls_dir(SRC_FOLDER)
 yamls_in_directory = sorted(yamls_in_directory)
 al_lat = []
@@ -264,6 +190,7 @@ for i in range(len(s_d) + 1):
         s_d[i+1] += s_d[i]
     except IndexError:
         pass
+
 
 plt.figure()
 plt.title("{} 1 {:03d}".format(season_title, len(yamls_in_directory)))
