@@ -55,10 +55,10 @@ def _format_seasons(dataset):
 
 def create_seasons(dataset, to_write):
     os.chdir(to_write)
-    with open('out.seasons', 'w') as fw:
+    with open('persons_velocity_lt_20__frames_gt_3.seasons', 'w') as fw:
         for row in dataset:
             fw.write(row + '\n')
 
 dataset = get_dataset('/var/lib/mysql-files/')
 seasons_dataset = _format_seasons(dataset)
-create_seasons(seasons_dataset, '/home/ilya/gryaz/prj.scripts')
+create_seasons(seasons_dataset, '/home/ilya/temp')
