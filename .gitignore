@@ -1,6 +1,7 @@
 *.gz
 *.jpg
 *.png
+*.json
 
 # Prerequisites
 *.d
