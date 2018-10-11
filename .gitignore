@@ -2,6 +2,8 @@
 *.jpg
 *.png
 *.json
+*.params
+*ubyte
 
 # Prerequisites
 *.d
