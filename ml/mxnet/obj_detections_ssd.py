@@ -1,51 +1,21 @@
-#tutorial from https://gluon.mxnet.io/chapter08_computer-vision/object-detection.html
+#https://gluon.mxnet.io/chapter08_computer-vision/object-detection.html
 
 import mxnet as mx
 from mxnet import nd
+from mxnet import gluon
 from mxnet.contrib.ndarray import MultiBoxPrior
-
-n = 40 # height & width
-# shape: batch x channel x height x width
-x = nd.random_uniform(shape=(1,3,n,n))
-
-y = MultiBoxPrior(x, sizes=[.5, .25, .1], ratios=[1, 2, .5])
-
-# the first anchor box generated for pixel at (20,20)
-# its format is (x_min, y_min, x_max, y_max)
-boxes = y.reshape((n, n, -1, 4))
-# print('The first anchor box at row 21, column 21:', boxes[20, 20, 0, :])
-
-
 import matplotlib.pyplot as plt
-def box_to_rect(box, color, linewidth=3):
-    """convert an anchor box to a matplotlib rectangle"""
-    box = box.asnumpy()
-    print(box)
-    return plt.Rectangle(
-        (box[0], box[1]), (box[2]-box[0]), (box[3]-box[1]),
-        fill=False, edgecolor=color, linewidth=linewidth)
-colors = ['blue', 'green', 'red', 'black', 'magenta']
-plt.imshow(nd.ones((n, n, 3)).asnumpy())
-anchors = boxes[20, 20, :, :]
-
-
-
-
 from mxnet.gluon import nn
+
 def class_predictor(num_anchors, num_classes):
     """return a layer to predict classes"""
     return nn.Conv2D(num_anchors * (num_classes + 1), 3, padding=1)
-
-
 
 
 def box_predictor(num_anchors):
     """return a layer to predict delta locations"""
     return nn.Conv2D(num_anchors * 4, 3, padding=1)
 
-box_pred = box_predictor(10)
-box_pred.initialize()
-x = nd.zeros((2, 3, 20, 20))
 
 def down_sample(num_filters):
     """stack two Conv-BatchNorm-Relu blocks and then a pooling layer
@@ -69,7 +39,7 @@ def flatten_prediction(pred):
 def concat_predictions(preds):
     return nd.concat(*preds, dim=1)
 
-from mxnet import gluon
+
 def body():
     """return the body network"""
     out = nn.HybridSequential()
@@ -139,6 +109,7 @@ class ToySSD(gluon.Block):
 
         return anchors, class_preds, box_preds
 
+# -----------------------download---------------------------
 from mxnet.test_utils import download
 import os.path as osp
 def verified(file_path, sha1hash):
@@ -167,6 +138,8 @@ for k, v in hashes.items():
         print('Downloading', target, url)
         download(url, fname=fname, dirname='data', overwrite=True)
 
+
+# -----------------------get_data---------------------------
 import mxnet.image as image
 data_shape = 256
 batch_size = 5
@@ -194,8 +167,8 @@ def get_iterators(data_shape, batch_size):
 train_data, test_data, class_names, num_class = get_iterators(data_shape, batch_size)
 batch = train_data.next()
 
+# -----------------------show sample image---------------------------
 import numpy as np
-
 img = batch.data[0][0].asnumpy()  # grab the first image, convert to numpy array
 img = img.transpose((1, 2, 0))  # we want channel to be the last dimension
 img += np.array([123, 117, 104])
@@ -211,6 +184,8 @@ for label in batch.label[0][0].asnumpy():
 plt.imshow(img)
 plt.show()
 
+# -----------------------START TRAINING---------------------------
+
 from mxnet.contrib.ndarray import MultiBoxTarget
 def training_targets(default_anchors, class_predicts, labels):
     class_predicts = nd.transpose(class_predicts, axes=(0, 2, 1))
@@ -219,6 +194,8 @@ def training_targets(default_anchors, class_predicts, labels):
     box_mask = z[1]  # mask is used to ignore box offsets we don't want to penalize, e.g. negative samples
     cls_target = z[2]  # cls_target is an array of labels for all anchors boxes
     return box_target, box_mask, cls_target
+
+# -----------------------LOSSES---------------------------
 
 class FocalLoss(gluon.loss.Loss):
     def __init__(self, axis=-1, alpha=0.25, gamma=2, batch_axis=0, **kwargs):
@@ -245,14 +222,11 @@ class SmoothL1Loss(gluon.loss.Loss):
         return F.mean(loss, self._batch_axis, exclude=True)
 
 box_loss = SmoothL1Loss()
-print(box_loss)
-
 cls_metric = mx.metric.Accuracy()
 box_metric = mx.metric.MAE()
 
 
-
-### Set context for training
+# -----------------------Set context for training---------------------------
 ctx = mx.gpu()  # it may takes too long to train using CPU
 try:
     _ = nd.zeros(1, ctx=ctx)
@@ -269,9 +243,12 @@ net.collect_params().reset_ctx(ctx)
 trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': 0.1, 'wd': 5e-4})
 
 
+# -----------------------Start training---------------------------
 epochs = 50  # set larger to get better performance
 log_interval = 20
 from_scratch = False  # set to True to train from scratch
+
+# -----------------------PRETRAINED?---------------------------
 if from_scratch:
     start_epoch = 0
 else:
@@ -284,7 +261,7 @@ else:
         download(url, fname=pretrained, overwrite=True)
     net.load_parameters(pretrained, ctx)
 
-
+# -----------------------TRAIN LOOP---------------------------
 import time
 from mxnet import autograd as ag
 for epoch in range(start_epoch, epochs):
@@ -326,9 +303,11 @@ for epoch in range(start_epoch, epochs):
     print('[Epoch %d] training: %s=%f, %s=%f'%(epoch, name1, val1, name2, val2))
     print('[Epoch %d] time cost: %f'%(epoch, time.time()-tic))
 
-# we can save the trained parameters to disk
+# ----------------------SAVE PARAMS---------------------------
 net.save_parameters('ssd_%d.params' % epochs)
 
+
+# -----------------------PREPROCESS TESTING IMAGES---------------------------
 import numpy as np
 import cv2
 def preprocess(image):
@@ -352,6 +331,8 @@ image = cv2.imread('img/p.jpg')
 x = preprocess(image)
 print('x', x.shape)
 
+
+# -----------------------NETWORK INFERENCE---------------------------
 # if pre-trained model is provided, we can load it
 # net.load_parameters('ssd_%d.params' % epochs, ctx)
 anchors, cls_preds, box_preds = net(x.as_in_context(ctx))
@@ -360,6 +341,8 @@ print('class predictions', cls_preds)
 print('box delta predictions', box_preds)
 
 
+
+# -----------Convert predictions to real object detection results-------------------
 from mxnet.contrib.ndarray import MultiBoxDetection
 # convert predictions to probabilities using softmax
 cls_probs = nd.SoftmaxActivation(nd.transpose(cls_preds, (0, 2, 1)), mode='channel')
@@ -368,6 +351,7 @@ output = MultiBoxDetection(*[cls_probs, box_preds, anchors], force_suppress=True
 print(output)
 
 
+# -----------------------DISPLAY TEST IMAGE---------------------------
 def display(img, out, thresh=0.5):
     import random
     import matplotlib as mpl
