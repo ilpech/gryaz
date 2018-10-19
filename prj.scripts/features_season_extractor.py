@@ -16,11 +16,13 @@ serial  = 'skl'
 SRC_FOLDER = "/testdata/{0:s}/inp/{1:s}.{2:03d}/".format(serial, serial, iSeason)
 print (SRC_FOLDER)
 
-def get_gm_coords_on_season(src_folder, draw_flag=False):
+def get_data_on_season(src_folder):
     yamls_in_directory = yamls_dir(src_folder)
     yamls_in_directory = sorted(yamls_in_directory)
-    al_lat = []
-    al_lon = []
+    season_lat = []
+    season_lon = []
+    season_speed = []
+    season_time = []
     for yaml_in_directory in yamls_in_directory:
         try:
             yml = ungzip(yaml_in_directory)
@@ -33,6 +35,8 @@ def get_gm_coords_on_season(src_folder, draw_flag=False):
         note = ''
         lat = []
         lon = []
+        speed_t = []
+        grab_msecs = []
         velocity = 0.0
         index = 1
         while index < len(shots):
@@ -49,6 +53,8 @@ def get_gm_coords_on_season(src_folder, draw_flag=False):
                 ):
                 lat.append(format(shots[index][sense]['senseData']['nord'], ".8f"))
                 lon.append(format(shots[index][sense]['senseData']['east'], ".8f"))
+                grab_msecs.append(shots[index][sense]['grabMsec'] / 360000)
+                speed_t.append(velocity)
             else:
                 pass
             index += 1
@@ -64,24 +70,35 @@ def get_gm_coords_on_season(src_folder, draw_flag=False):
         if bad_en_flag:
             continue
         for i in range(len(lat)):
-            al_lat.append(lat[i])
-            al_lon.append(lon[i])
+            season_lat.append(lat[i])
+            season_lon.append(lon[i])
+            season_speed.append(speed_t[i])
+            season_time.append(grab_msecs[i])
 
-    if len(al_lat) != 0:
-        lat0 = al_lat.pop(0)
-        lon0 = al_lon.pop(0)
-        lat = np.array(al_lat, dtype=float)
-        lon = np.array(al_lon, dtype=float)
-        x, y = mercator(lat,lon, float(lat0), float(lon0))
-
-        if(draw_flag):
-            plt.plot(x,y,'--')
-            plt.grid(True)
-            plt.show()
-
-        return x, y
-
+    if len(season_lat) != 0:
+        return season_lat, season_lon, season_speed, season_time
     else:
         print("No good points founded")
 
-get_gm_coords_on_season(SRC_FOLDER, True)
+import numpy as np
+
+s_lat_data, s_lon_data, s_speed_data, s_timestamps = get_data_on_season(SRC_FOLDER)
+
+if len(s_lat_data) != 0:
+    lat0 = s_lat_data.pop(0)
+    lon0 = s_lon_data.pop(0)
+    lat = np.array(s_lat_data, dtype=float)
+    lon = np.array(s_lon_data, dtype=float)
+    x, y = mercator(lat,lon, float(lat0), float(lon0))
+
+
+    plt.plot(x,y,'--')
+    plt.grid(True)
+    plt.show()
+
+
+plt.plot(s_timestamps, s_speed_data)
+plt.xlabel('t [h]')
+plt.ylabel('speed [km/h]')
+# plt.plot(np.diff(s_speed_data, s_timestamps-1))
+plt.show()
