@@ -10,7 +10,7 @@ from mxnet.gluon.data.vision import transforms
 from gluoncv.utils import makedirs, TrainingHistory
 from gluoncv.model_zoo import get_model
 
-testdata_path = '/home/ilya/gryaz/prj.scripts/mxnet/traffic_lights/testdata'
+testdata_path = '/home/ilya/gryaz/mxnet/traffic_lights/testdata'
 dataset_path = '/datasets/traffic_lights/sol_test'
 train_path = os.path.join(dataset_path, 'train')
 
