@@ -1,0 +1,5 @@
+https://gluon-cv.mxnet.io/build/examples_datasets/recordio.html
+
+python3 im2rec.py /datasets/example/example_rec /datasets/example/ --recursive --list --num-thread 8
+
+python3 im2rec.py /datasets/example/example_rec /datasets/example/ --recursive --pass-through --pack-label --num-thread 8 # add --no-shuffle for val_dataset

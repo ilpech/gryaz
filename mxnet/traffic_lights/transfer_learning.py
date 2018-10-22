@@ -22,9 +22,8 @@ def test(net, val_data, ctx):
 
 num_gpus = 1
 num_workers = 8
-# ctx = [mx.gpu(i) for i in range(num_gpus)] if num_gpus > 0 else [mx.cpu()]
 ctx = [mx.gpu()]
-per_device_batch_size = 1
+per_device_batch_size = 4
 batch_size = per_device_batch_size * max(num_gpus, 1)
 
 print("Batch size", batch_size)
@@ -33,20 +32,19 @@ jitter_param = 0.4
 lighting_param = 0.1
 
 transform_train = transforms.Compose([
-    transforms.RandomResizedCrop(224),
+    transforms.RandomResizedCrop(100),
     transforms.RandomFlipLeftRight(),
     transforms.RandomColorJitter(brightness=jitter_param, contrast=jitter_param,
                                  saturation=jitter_param),
     transforms.RandomLighting(lighting_param),
     transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
 ])
 
 transform_test = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
+    transforms.Resize(100),
     transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
 ])
 
 classes = 2
@@ -60,7 +58,7 @@ lr_decay_epoch = [80, 160, np.inf]
 lr_decay_count = 0
 
 
-dataset_path = '/datasets/traffic_lights/dataset'
+dataset_path = '/datasets/traffic_lights/sol_test'
 train_path = os.path.join(dataset_path, 'train')
 val_path = os.path.join(dataset_path, 'val')
 test_path = os.path.join(dataset_path, 'test')
@@ -129,43 +127,11 @@ for epoch in range(epochs):
     print('[Epoch %d] Train-acc: %.3f, loss: %.3f | Val-acc: %.3f | time: %.1f' %
              (epoch, train_acc, train_loss, val_acc, time.time() - tic))
 
+    if epoch % 10 == 0:
+        tuned_net.save_parameters('ttl_epoch_{:03d}__resnet20_v.params'.format(epoch))
+
 
 train_history.plot()
 
 name, test_acc = test(tuned_net, test_data, ctx)
 print('[Finished] Test-acc: %.3f' % (test_acc))
-
-tuned_net.save_parameters('two_traffic_lights_v2__resnet20_v2.params')
-
-
-
-
-
-
-
-
-#
-# im_fname = 'trm.014.008.00102_x0101y0148w0088h0191.png'
-#
-# img = image.imread(im_fname)
-#
-# plt.imshow(img.asnumpy())
-# plt.show()
-#
-# img = transform_test(img)
-#
-# plt.imshow(nd.transpose(img, (1,2,0)).asnumpy())
-# plt.show()
-#
-# tuned_net.load_parameters('two_traffic_lights_v2__resnet20_v2.params')
-#
-# pred = tuned_net(img.expand_dims(axis=0))
-#
-# # class_names = ['car_traffic_light', 'tram_traffic_light']
-# class_names = os.listdir(train_path)
-# print(class_names)
-# ind = nd.argmax(pred, axis=1).astype('int')
-# print('The input picture is classified as [%s], with probability %.3f.'%
-#       (class_names[ind.asscalar()], nd.softmax(pred)[0][ind].asscalar()))
-#
-# print(tuned_net.output)
