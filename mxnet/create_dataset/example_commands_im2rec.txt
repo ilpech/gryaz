@@ -1,5 +1,7 @@
 https://gluon-cv.mxnet.io/build/examples_datasets/recordio.html
 
-python3 im2rec.py /datasets/example/example_rec /datasets/example/ --recursive --list --num-thread 8
+python3 im2rec.py /datasets/traffic_lights/dataset_rec /datasets/traffic_lights/dataset_rejector_splitted/train --recursive --list --num-thread 8
+python3 im2rec.py /datasets/traffic_lights/dataset_rec.lst /datasets/traffic_lights/dataset_rejector_splitted/train --recursive --pass-through --pack-label --num-thread 8
 
-python3 im2rec.py /datasets/example/example_rec /datasets/example/ --recursive --pass-through --pack-label --num-thread 8 # add --no-shuffle for val_dataset
+python3 im2rec.py /datasets/traffic_lights/dataset_rec_val /datasets/traffic_lights/dataset_rejector_splitted/val --recursive --list --num-thread 8
+python3 im2rec.py /datasets/traffic_lights/dataset_rec_val.lst /datasets/traffic_lights/dataset_rejector_splitted/val --recursive --pass-through --pack-label --no-shuffle --num-thread 8

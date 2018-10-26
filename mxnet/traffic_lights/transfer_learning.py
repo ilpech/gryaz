@@ -23,7 +23,7 @@ def test(net, val_data, ctx):
 num_gpus = 1
 num_workers = 8
 ctx = [mx.gpu()]
-per_device_batch_size = 4
+per_device_batch_size = 2
 batch_size = per_device_batch_size * max(num_gpus, 1)
 
 print("Batch size", batch_size)
@@ -47,7 +47,7 @@ transform_test = transforms.Compose([
     transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
 ])
 
-classes = 2
+classes = 3
 
 epochs = 240
 lr = 0.1
@@ -58,7 +58,7 @@ lr_decay_epoch = [80, 160, np.inf]
 lr_decay_count = 0
 
 
-dataset_path = '/datasets/traffic_lights/sol_test'
+dataset_path = '/datasets/traffic_lights/dataset_rejector_splitted'
 train_path = os.path.join(dataset_path, 'train')
 val_path = os.path.join(dataset_path, 'val')
 test_path = os.path.join(dataset_path, 'test')

@@ -4,7 +4,7 @@ import pathlib
 import random
 
 
-dataset_path = '/datasets/traffic_lights/sol_test'
+dataset_path = '/datasets/traffic_lights/dataset_splitted'
 train_path = os.path.join(dataset_path, 'train')
 val_path = os.path.join(dataset_path, 'val')
 test_path = os.path.join(dataset_path, 'test')
@@ -19,7 +19,7 @@ except PermissionError:
     print('Unable to create directory. Permission denied')
 
 
-path_to_solyanka = '/media/ilya/data/datasets/traffic_lights/solyanka'
+path_to_solyanka = '/media/ilya/data/datasets/traffic_lights/dataset_mixed'
 
 for im_class in os.listdir(path_to_solyanka):
     train_class_path = os.path.join(train_path, im_class)
