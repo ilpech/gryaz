@@ -11,7 +11,7 @@ from gluoncv.utils import makedirs, TrainingHistory
 from gluoncv.model_zoo import get_model
 
 testdata_path = '/home/ilya/gryaz/mxnet/traffic_lights/testdata'
-dataset_path = '/datasets/traffic_lights/sol_test'
+dataset_path = '/datasets/traffic_lights/old/sol_test'
 train_path = os.path.join(dataset_path, 'train')
 
 ctx = [mx.cpu()]
@@ -22,12 +22,26 @@ with tuned_net.name_scope():
 tuned_net.output.initialize(init.Xavier(), ctx = ctx)
 tuned_net.collect_params().reset_ctx(ctx)
 tuned_net.hybridize()
-tuned_net.load_parameters('training_logs/ttl_v4__resnset20/params/two_traffic_lights_v4__resnet20_v2.params')
+# tuned_net.load_parameters('training_logs/ttl_v4__resnset20/params/two_traffic_lights_v4__resnet20_v2.params')
+tuned_net.load_parameters('rejector1_009__resnet20_v2.params')
 
 transform_test = transforms.Compose([
-    transforms.Resize(100),
+    transforms.Resize(256),
     transforms.ToTensor(),
-    transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+jitter_param = 0.4
+lighting_param = 0.1
+transform_train = transforms.Compose([
+    transforms.RandomResizedCrop(input_size),
+    transforms.RandomFlipLeftRight(),
+    transforms.RandomColorJitter(brightness=jitter_param, contrast=jitter_param,
+                                 saturation=jitter_param),
+    transforms.RandomLighting(lighting_param),
+    transforms.ToTensor(),
+    normalize
 ])
 
 for im_fname in os.listdir(testdata_path):
