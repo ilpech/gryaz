@@ -14,10 +14,12 @@ middle = (start_at + finish_at) // 2
 while start_at != finish_at:
 
     old_middle = middle
-    middle = (start_at + finish_at) // 2
+
     if first_launch:
         finish_at = finish_at // 2
         first_launch = False
+
+    middle = (start_at + finish_at) // 2
 
     print('? ', range(start_at, finish_at))
     answer = input()
